@@ -45,11 +45,11 @@ def _replace_in_file(replacements: list[tuple[str, str]], src: str, dst: str | N
         src: The source file.
         dst: The destination file. If not provided, the source file will be overwritten.
     """
-    with open(src) as file:
+    with open(src, encoding="utf-8") as file:
         content = file.read()
     for old, new in replacements:
         content = content.replace(old, new)
-    with open(src if dst is None else dst, "w") as file:
+    with open(src if dst is None else dst, "w", encoding="utf-8") as file:
         file.write(content)
 
 
@@ -60,7 +60,7 @@ def _write_file(dst: str, content: str) -> None:
         dst: The path to the file.
         content: The content to write to the file.
     """
-    with open(dst, "w") as file:
+    with open(dst, "w", encoding="utf-8") as file:
         file.write(content)
 
 

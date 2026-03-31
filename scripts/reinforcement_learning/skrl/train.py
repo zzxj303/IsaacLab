@@ -81,6 +81,7 @@ import random
 from datetime import datetime
 
 import skrl
+import torch
 from packaging import version
 
 # check for minimum supported skrl version
@@ -110,11 +111,57 @@ from isaaclab.utils.io import dump_yaml
 
 from isaaclab_rl.skrl import SkrlVecEnvWrapper
 
+
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
-# import logger
+# import logger (must be before using it in exception handlers)
 logger = logging.getLogger(__name__)
+
+# import custom Isaac Lab callback for TensorBoard logging
+# (添加这部分)
+# === 自定义 Callback 定义开始 ===
+class IsaacLabLogCallback:
+    def __init__(self):
+        pass
+    def on_train_step(self, timestep, timesteps_total, runner):
+        # 为了减少开销，每 50 步记录一次
+        if timestep % 50 != 0:
+            return
+
+        # 1. 尝试获取 Writer
+        writer = None
+        if hasattr(runner, "trainer") and runner.trainer.writer:
+            writer = runner.trainer.writer
+        elif hasattr(runner, "agent") and runner.agent.writer:
+            writer = runner.agent.writer
+        
+        if writer is None:
+            return
+
+        # 2. 获取底层的 Isaac Lab 环境
+        # runner.env 是 skrl 的 Wrapper，我们需要取 .unwrapped 拿到原始环境
+        env = runner.env
+        base_env = getattr(env, "unwrapped", env)
+
+        # 3. 读取 extras["log"] 并写入 TensorBoard
+        if hasattr(base_env, "extras") and "log" in base_env.extras:
+            log_data = base_env.extras["log"]
+            
+            for key, value in log_data.items():
+                # 处理 Tensor 数据
+                if isinstance(value, torch.Tensor):
+                    if value.numel() > 1:
+                        scalar_val = value.mean().item()
+                    else:
+                        scalar_val = value.item()
+                elif isinstance(value, (int, float)):
+                    scalar_val = value
+                else:
+                    continue
+
+                writer.add_scalar(key, scalar_val, timesteps_total)
+# === 自定义 Callback 定义结束 ===
 
 # PLACEHOLDER: Extension template (do not remove this comment)
 
@@ -226,6 +273,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print(f"[INFO] Loading model checkpoint from: {resume_path}")
         runner.agent.load(resume_path)
 
+    # add custom Isaac Lab callback for logging environment metrics to TensorBoard
+
+    print("[INFO] Adding IsaacLabLogCallback for environment metrics logging to TensorBoard")
+    isaac_lab_callback = IsaacLabLogCallback()
+    # Add callback to the trainer's callback list
+    if not hasattr(runner.trainer, "callbacks"):
+        runner.trainer.callbacks = []
+    runner.trainer.callbacks.append(isaac_lab_callback)
+    print("[INFO] IsaacLabLogCallback successfully registered")
+    
     # run training
     runner.run()
 
