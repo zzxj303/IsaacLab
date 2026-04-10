@@ -251,8 +251,10 @@ class QuadcopterWindingCorridorEnv(DirectRLEnv):
         self._goal_pos_w[env_ids, 2] = float(self.cfg.flight_z)
 
     def _reset_obstacle_layout(self, env_ids: torch.Tensor):
-        """Sample a fresh pillar layout for the reset environments."""
+        """Optionally sample a fresh pillar layout for the reset environments."""
 
+        if not self.cfg.resample_pillars_on_reset:
+            return
         scene_builder.reset_pillar_layouts(self, env_ids)
 
     def _reset_robot_state(self, env_ids: torch.Tensor):

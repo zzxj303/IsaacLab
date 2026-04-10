@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import math
+
 import torch
 
 
@@ -22,10 +24,15 @@ def rew_goal_proximity(env, current_goal_dist: torch.Tensor) -> torch.Tensor:
 
 
 def rew_upright(env) -> torch.Tensor:
-    """Reward staying close to upright flight."""
+    """Reward stable attitude with 60 deg tilt as the stability boundary."""
 
-    gravity_z = env._robot.data.projected_gravity_b[:, 2]
-    return ((gravity_z + 1.0) / 2.0) ** 2
+    gravity_z = env._robot.data.projected_gravity_b[:, 2].clamp(-1.0, 1.0)
+    tilt_angle = torch.acos(-gravity_z).abs()
+    stable_tilt = math.pi / 3.0
+    stable_mask = tilt_angle <= stable_tilt
+    within_band = torch.clamp(1.0 - tilt_angle / stable_tilt, min=0.0)
+    # Add a binary bonus for being inside 60 deg, plus smooth shaping near upright.
+    return stable_mask.float() + within_band
 
 
 def rew_height_tracking(env, env_origins: torch.Tensor) -> torch.Tensor:

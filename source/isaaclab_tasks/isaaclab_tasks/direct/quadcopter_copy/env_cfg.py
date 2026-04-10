@@ -86,10 +86,10 @@ class QuadcopterWindingCorridorEnvCfg(DirectRLEnvCfg):
         ),
     )
     thrust_to_weight: float = 2.2
-    body_rate_scale: tuple[float, float, float] = (6.0, 6.0, 3.0)
+    body_rate_scale: tuple[float, float, float] = (3.5, 3.5, 1.8)
     rate_kp: tuple[float, float, float] = (0.02, 0.02, 0.01)
-    rate_kd: tuple[float, float, float] = (0.002, 0.002, 0.001)
-    moment_limit: tuple[float, float, float] = (0.12, 0.12, 0.06)
+    rate_kd: tuple[float, float, float] = (0.004, 0.004, 0.002)
+    moment_limit: tuple[float, float, float] = (0.08, 0.08, 0.04)
 
     # -------------------------------------------------------------------------
     # Reward scales
@@ -97,10 +97,10 @@ class QuadcopterWindingCorridorEnvCfg(DirectRLEnvCfg):
     goal_progress_reward_scale: float = 15.0
     goal_proximity_reward_scale: float = 0.5
     success_bonus: float = 20.0
-    upright_reward_scale: float = 1.0
+    upright_reward_scale: float = 4.0
     height_reward_scale: float = 0.75
-    ang_vel_penalty_scale: float = -0.02
-    action_smoothness_penalty_scale: float = -0.01
+    ang_vel_penalty_scale: float = -0.04
+    action_smoothness_penalty_scale: float = -0.03
     height_violation_penalty_scale: float = -4.0
     collision_penalty: float = -5.0
 
@@ -133,6 +133,7 @@ class QuadcopterWindingCorridorEnvCfg(DirectRLEnvCfg):
     active_pillar_count: int = 60
     inactive_pillar_drop_z: float = -5.0
     layout_batch_size: int = 32
+    resample_pillars_on_reset: bool = False
     obstacle_sector_count: int = 8
     obstacle_max_range: float = 4.0
 
@@ -146,13 +147,14 @@ class QuadcopterWindingCorridorEnvCfg(DirectRLEnvCfg):
     # -------------------------------------------------------------------------
     # Safety limits and terminations
     # -------------------------------------------------------------------------
-    max_height_pillar_stage: float = 1.5
-    height_violation_margin: float = 0.3
+    max_height_pillar_stage: float = 2.3
+    height_violation_margin: float = 0.2
     max_flight_height: float = 2.5
-    max_tilt_rad: float = 1.05
+    max_tilt_rad: float = 1.22
     ground_contact_height: float = 0.16
     wall_contact_margin: float = 0.18
     collision_force_threshold: float = 0.5
+    termination_grace_steps: int = 20
 
     # -------------------------------------------------------------------------
     # Reset noise
@@ -164,13 +166,13 @@ class QuadcopterWindingCorridorEnvCfg(DirectRLEnvCfg):
     # -------------------------------------------------------------------------
     # Wind disturbance
     # -------------------------------------------------------------------------
-    wind_enabled: bool = True
-    wind_is_global: bool = True
-    wind_xy_only: bool = True
+    wind_enabled: bool = False
+    wind_is_global: bool = False
+    wind_xy_only: bool = False
     wind_mean: float = 0.3
     wind_variance: float = 0.15
     wind_update_interval: float = 0.2
-    active_wind_enabled: bool = True
+    active_wind_enabled: bool = False
     active_wind_mean: float = 0.3
     active_wind_variance: float = 0.15
 

@@ -40,9 +40,6 @@ def generate_pillar_layout(
         candidate_x = torch.rand(1, device=device) * (x_max - x_min) + x_min
         candidate_y = torch.rand(1, device=device) * (2.0 * y_limit) - y_limit
 
-        if torch.abs(candidate_y - float(cfg.goal_y_position)) < corridor_half_width:
-            continue
-
         candidate = torch.stack((candidate_x.squeeze(0), candidate_y.squeeze(0)))
         if placed > 0:
             distances = torch.linalg.norm(centers[:placed] - candidate.unsqueeze(0), dim=-1)
@@ -55,13 +52,10 @@ def generate_pillar_layout(
 
     if placed < active_count:
         fallback_x = torch.linspace(x_min, x_max, active_count - placed + 2, device=device)[1:-1]
-        fallback_y = torch.empty(active_count - placed, device=device)
-        fallback_y[0::2] = corridor_half_width + 0.35
-        fallback_y[1::2] = -(corridor_half_width + 0.35)
-        fallback_y = torch.clamp(fallback_y, min=-y_limit, max=y_limit)
         count = active_count - placed
+        fallback_y = torch.rand(count, device=device) * (2.0 * y_limit) - y_limit
         centers[placed:active_count, 0] = fallback_x[:count]
-        centers[placed:active_count, 1] = fallback_y[:count]
+        centers[placed:active_count, 1] = fallback_y
         active_mask[placed:active_count] = True
 
     return centers, active_mask

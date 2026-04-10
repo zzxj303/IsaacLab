@@ -97,11 +97,15 @@ def get_dones(env) -> tuple[torch.Tensor, torch.Tensor]:
     out_of_bounds = term_out_of_bounds(env, pos_local)
     out_of_corridor = term_out_of_corridor(env, pos_local)
     over_height = term_flying_over_pillars(env, pos_local)
-    excessive_tilt = term_excessive_tilt(env)
+    excessive_tilt_raw = term_excessive_tilt(env)
     ground_contact = term_ground_contact(env, pos_local)
     wall_contact = term_wall_contact(env, pos_local)
     hit_pillar = term_hit_pillar(env, pos_local, ground_contact, wall_contact)
     success = term_success(env)
+
+    grace_steps = int(getattr(env.cfg, "termination_grace_steps", 0))
+    in_grace = env.episode_length_buf < grace_steps
+    excessive_tilt = excessive_tilt_raw & ~in_grace
 
     env._goal_reached = success
     env._term_out_of_bounds = out_of_bounds | out_of_corridor
@@ -122,4 +126,6 @@ def get_dones(env) -> tuple[torch.Tensor, torch.Tensor]:
         | hit_pillar
         | success
     )
+    just_reset = env.episode_length_buf == 0
+    terminated = terminated & ~just_reset
     return terminated, time_out
